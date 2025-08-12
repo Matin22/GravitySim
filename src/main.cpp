@@ -1,101 +1,52 @@
 #include <GLAD/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <fstream>
+#include <sstream>
+
 #include <iostream>
+
 #include <vector>
-#include <cmath>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+#include "shader.hpp"
+#include "camera.hpp"
+#include "ball_object.hpp"
+#include "conf.hpp"
 
-const unsigned int SCREEN_WIDTH = 800;
-const unsigned int SCREEN_HEIGHT = 600;
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-const float PI = 3.14159265358979323846;
+std::string parseShader(const std::string &filePath)
+{
+    std::ifstream file(filePath);
+    std::stringstream buffer;
 
-// Simple vertex shader with aspect ratio correction
-const char* vertexShaderSource = R"(
-#version 330 core
-layout (location = 0) in vec2 aPos;
-uniform float aspectRatio;
-void main() {
-    vec2 pos = aPos;
-    pos.x /= aspectRatio;  // Correct for aspect ratio
-    gl_Position = vec4(pos, 0.0, 1.0);
-}
-)";
+    buffer << file.rdbuf();
 
-// Simple fragment shader
-const char* fragmentShaderSource = R"(
-#version 330 core
-out vec4 FragColor;
-void main() {
-    FragColor = vec4(1.0, 0.5, 0.0, 1.0); // Orange circle
-}
-)";
-
-std::vector<float> createCircle(float centerX, float centerY, float radius, int segments = 32) {
-    std::vector<float> vertices;
-    
-    // Center point
-    vertices.push_back(centerX);
-    vertices.push_back(centerY);
-    
-    // Circle points
-    for (int i = 0; i <= segments; i++) {
-        float angle = 2.0f * PI * i / segments;
-        vertices.push_back(centerX + radius * cos(angle));
-        vertices.push_back(centerY + radius * sin(angle));
-    }
-    
-    return vertices;
+    return buffer.str();
 }
 
-unsigned int createShaderProgram() {
-    // Compile vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    
-    // Check vertex shader compilation
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    
-    // Compile fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    
-    // Check fragment shader compilation
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    
-    // Link shaders
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    
-    // Check linking
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-    
-    return shaderProgram;
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+{
+    glViewport(0, 0, width, height);
 }
+
+void scroll_callback(GLFWwindow *window, double offsetX, double offSetY)
+{
+}
+
+void mouse_callback(GLFWwindow* window, double xPos, double yPos)
+{
+}
+
+
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+}
+
 
 int main()
 {
@@ -103,92 +54,87 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, false);
 
-    GLFWwindow *window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "GravitySim", NULL, NULL);
-    if (window == NULL) {
-        std::cout << "Failed to create GLFW window" << std::endl;
+    GLFWwindow *window = glfwCreateWindow(conf::SCREEN_WIDTH, conf::SCREEN_HEIGHT, "GravitySim", NULL, NULL);
+
+    if (window == NULL)
+    {
+        std::cout << "Failed to create GLFW Window" << std::endl;
         glfwTerminate();
         return -1;
     }
+
     glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    
+    // glfwSetCursorPosCallback(window, mouse_callback);
+    // glfwSetScrollCallback(window, scroll_callback);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to init GLAD!" << std::endl;
+        std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    // import and create shader
+    Shader myShader("res\\shaders\\vshader.glsl", "res\\shaders\\fshader.glsl");
 
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    myShader.use();
+    
+    std::vector<ballObject*> balls =
+    {
+        new ballObject(glm::vec2(400.0f, 300.0f), 50.0f, glm::vec2(0.0f, 0.0f)),
+        new ballObject(glm::vec2(700.0f, 300.0f), 10.0f, glm::vec2(10.0f, -70.0f))
+    };
+    
+    balls[0]->mass = 1000.0f;
+    balls[1]->mass = 10.0f;
 
-    // Create shader program
-    unsigned int shaderProgram = createShaderProgram();
-    
-    // Calculate aspect ratio
-    float aspectRatio = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
-    
-    // Create circle data
-    std::vector<float> circleVertices = createCircle(0.0f, 0.0f, 0.3f); // Center at origin, radius 0.3
-    
-    // Create VAO and VBO
-    unsigned int VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float), circleVertices.data(), GL_STATIC_DRAW);
-    
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    while (!glfwWindowShouldClose(window))
+    {
+        // user input handling
+        processInput(window);
 
-    // Get uniform location
-    int aspectRatioLoc = glGetUniformLocation(shaderProgram, "aspectRatio");
+        for (auto ball1 : balls)
+        {
+            for (auto ball2 : balls)
+            {
+                ball1->applyGravity(ball2);
+                ball2->applyGravity(ball1);
+            }
+        }
 
-    while(!glfwWindowShouldClose(window)){
-        glfwPollEvents();
+        for (auto ball : balls)
+        {
+            ball->update(conf::dt);
+        }
 
         // rendering
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f); // Dark gray background
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw circle
-        glUseProgram(shaderProgram);
-        
-        // Set aspect ratio uniform
-        glUniform1f(aspectRatioLoc, aspectRatio);
-        
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, circleVertices.size() / 2);
+        // set projection matrix for every object
+        glm::mat4 projection = glm::mat4(1.0f);
+        projection = glm::ortho(0.0f, static_cast<float>(conf::SCREEN_WIDTH), 0.0f, static_cast<float>(conf::SCREEN_HEIGHT));
+        myShader.setMat4("projection", projection);
 
+        for (auto ball : balls)
+        {
+            ball->draw(myShader);
+        }
+
+        // check events and call events and swap buffer frame
         glfwSwapBuffers(window);
+        glfwPollEvents();
     }
-    
-    // Cleanup
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-    
+
+    for (auto ball : balls)
+    {
+        delete ball;
+    }
+
     glfwTerminate();
     return 0;
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
-    (void)scancode;
-    (void)mode;
-    
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-}
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    (void)window;
-    glViewport(0, 0, width, height);
 }
