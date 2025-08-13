@@ -17,6 +17,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+std::vector<ballObject *> balls;
+
 std::string parseShader(const std::string &filePath)
 {
     std::ifstream file(filePath);
@@ -40,6 +42,30 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos)
 {
 }
 
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        
+        float x = static_cast<float>(xpos);
+        float y = static_cast<float>(conf::SCREEN_HEIGHT - ypos);
+        
+        // Create new ball at mouse position
+        ballObject* newBall = new ballObject(
+            glm::vec2(x, y), 
+            10.0f,  // radius
+            glm::vec2(0.0f, 0.0f),  // velocity
+            glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)  // blue color
+        );
+        newBall->mass = 25.0f;
+        
+        balls.push_back(newBall);
+        
+        std::cout << "Created new ball at: " << x << ", " << y << std::endl;
+    }
+}
 
 void processInput(GLFWwindow *window)
 {
@@ -69,7 +95,8 @@ int main()
     
     // glfwSetCursorPosCallback(window, mouse_callback);
     // glfwSetScrollCallback(window, scroll_callback);
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -77,20 +104,24 @@ int main()
         return -1;
     }
 
+    glLineWidth(3.0f);
+
     // import and create shader
     Shader myShader("res\\shaders\\vshader.glsl", "res\\shaders\\fshader.glsl");
 
     
     myShader.use();
     
-    std::vector<ballObject*> balls =
+    balls =
     {
-        new ballObject(glm::vec2(400.0f, 300.0f), 50.0f, glm::vec2(0.0f, 0.0f)),
-        new ballObject(glm::vec2(700.0f, 300.0f), 10.0f, glm::vec2(10.0f, -70.0f))
+        // new ballObject(conf::OBJECT1_POSITION, conf::OBJECT1_RADIUS, conf::OBJECT1_VELOCITY, conf::OBJECT1_COLOR),
+        // new ballObject(conf::OBJECT2_POSITION, conf::OBJECT2_RADIUS, conf::OBJECT2_VELOCITY, conf::OBJECT2_COLOR)
+        new ballObject(glm::vec2(500.0f, 600.0f), 15.0f, glm::vec2(20.0f, 0.0f), conf::OBJECT1_COLOR),
+        new ballObject(glm::vec2(500.0f, 400.0f), 15.0f, glm::vec2(-20.0f, 0.0f), conf::OBJECT1_COLOR)
     };
     
-    balls[0]->mass = 1000.0f;
-    balls[1]->mass = 10.0f;
+    balls[0]->mass = 100.0f;
+    balls[1]->mass = 100.0f;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -106,6 +137,11 @@ int main()
             }
         }
 
+        // for (size_t i = 1; i < balls.size(); i++)
+        // {
+        //     balls[i]->applyGravity(balls[0]);
+        // }
+
         for (auto ball : balls)
         {
             ball->update(conf::dt);
@@ -119,6 +155,11 @@ int main()
         glm::mat4 projection = glm::mat4(1.0f);
         projection = glm::ortho(0.0f, static_cast<float>(conf::SCREEN_WIDTH), 0.0f, static_cast<float>(conf::SCREEN_HEIGHT));
         myShader.setMat4("projection", projection);
+
+        for (auto ball : balls)
+        {
+            ball->drawTrail(myShader);
+        }
 
         for (auto ball : balls)
         {
