@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "shader.hpp"
+#include "conf.hpp"
 
 class ballObject
 {
@@ -31,9 +32,17 @@ public:
     glm::vec4 color;
     glm::vec2 acceleration;
 
+    std::vector<float> trailVertices;
+    int maxTrailLength = conf::MAX_TRAIL_LENGTH;
+    void drawTrail(Shader shaderprogram) const;
+
 private:
     GLuint VAO, VBO;
+    GLuint trailVAO, trailVBO;
+    
     std::vector<float> vertices;
+
+    int frameCounter = 0;
 
     void createVertices(int segments = 32);
 };

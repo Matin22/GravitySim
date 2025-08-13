@@ -18,16 +18,36 @@ ballObject::ballObject(glm::vec2 pos, float radius, glm::vec2 velocity, glm::vec
     // stride and offset for position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
+
+
+    // trail buffers
+    glGenBuffers(1, &trailVBO);
+    glGenVertexArrays(1, &trailVAO);
+    glBindVertexArray(trailVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
 }
 
 ballObject::~ballObject()
 {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &trailVAO);
+    glDeleteBuffers(1, &trailVBO);
 }
 
 void ballObject::update(float dt)
 {
+    trailVertices.push_back(position.x);
+    trailVertices.push_back(position.y);
+    trailVertices.push_back(0.0f);
+
+    if (trailVertices.size() > (maxTrailLength * 3) && maxTrailLength != 0)
+        trailVertices.erase(trailVertices.begin(), trailVertices.begin() + 3);
+
     velocity += acceleration * dt;
     position += velocity * dt;
     acceleration = glm::vec2(0.0f, 0.0f);
@@ -66,6 +86,26 @@ void ballObject::applyGravity(const ballObject *other)
         glm::vec2 forceVector = direction * force;
         applyForce(forceVector);
     }
+}
+
+void ballObject::drawTrail(Shader shaderprogram) const
+{
+    if (trailVertices.size() < 2 * 3)
+        return;
+
+    glBindVertexArray(trailVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
+    glBufferData(GL_ARRAY_BUFFER, trailVertices.size() * sizeof(float), trailVertices.data(), GL_DYNAMIC_DRAW);
+    shaderprogram.use();
+    glm::mat4 model = glm::mat4(1.0f);
+    shaderprogram.setMat4("model", model);
+
+    glm::vec4 trailColor = color;
+    trailColor.a = 0.5f;
+    shaderprogram.setVec4("color", trailColor);
+
+    glDrawArrays(GL_LINE_STRIP, 0, trailVertices.size() / 3);
+    glBindVertexArray(0);
 }
 
 void ballObject::createVertices(int segments)
