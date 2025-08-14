@@ -55,11 +55,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         // Create new ball at mouse position
         ballObject* newBall = new ballObject(
             glm::vec2(x, y), 
-            10.0f,  // radius
-            glm::vec2(0.0f, 0.0f),  // velocity
-            glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)  // blue color
+            10.0f,                              // radius
+            glm::vec2(0.0f, 0.0f),              // velocity
+            25.0f,                              // mass
+            glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)   // blue color
         );
-        newBall->mass = 25.0f;
         
         balls.push_back(newBall);
         
@@ -114,33 +114,30 @@ int main()
     
     balls =
     {
-        // new ballObject(conf::OBJECT1_POSITION, conf::OBJECT1_RADIUS, conf::OBJECT1_VELOCITY, conf::OBJECT1_COLOR),
-        // new ballObject(conf::OBJECT2_POSITION, conf::OBJECT2_RADIUS, conf::OBJECT2_VELOCITY, conf::OBJECT2_COLOR)
-        new ballObject(glm::vec2(500.0f, 600.0f), 15.0f, glm::vec2(20.0f, 0.0f), conf::OBJECT1_COLOR),
-        new ballObject(glm::vec2(500.0f, 400.0f), 15.0f, glm::vec2(-20.0f, 0.0f), conf::OBJECT1_COLOR)
+        new ballObject(conf::OBJECT1_POSITION, conf::OBJECT1_RADIUS, conf::OBJECT1_VELOCITY, 100.0f, conf::OBJECT1_COLOR),
+        new ballObject(conf::OBJECT2_POSITION, conf::OBJECT2_RADIUS, conf::OBJECT2_VELOCITY, 100.0f, conf::OBJECT2_COLOR)
+        // new ballObject(glm::vec2(500.0f, 600.0f), 15.0f, glm::vec2(20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR),
+        // new ballObject(glm::vec2(500.0f, 400.0f), 15.0f, glm::vec2(-20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR)
     };
-    
-    balls[0]->mass = 100.0f;
-    balls[1]->mass = 100.0f;
 
     while (!glfwWindowShouldClose(window))
     {
         // user input handling
         processInput(window);
 
-        for (auto ball1 : balls)
-        {
-            for (auto ball2 : balls)
-            {
-                ball1->applyGravity(ball2);
-                ball2->applyGravity(ball1);
-            }
-        }
-
-        // for (size_t i = 1; i < balls.size(); i++)
+        // for (auto ball1 : balls)
         // {
-        //     balls[i]->applyGravity(balls[0]);
+        //     for (auto ball2 : balls)
+        //     {
+        //         ball1->applyGravity(ball2);
+        //         ball2->applyGravity(ball1);
+        //     }
         // }
+
+        for (size_t i = 1; i < balls.size(); i++)
+        {
+            balls[i]->applyGravity(balls[0]);
+        }
 
         for (auto ball : balls)
         {
