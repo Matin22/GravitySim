@@ -15,7 +15,10 @@
 class ballObject
 {
 public:
-    ballObject(glm::vec2 pos, float radius, glm::vec2 velocity = glm::vec2(0.0f, 0.0f), glm::vec4 color = glm::vec4(1, 0, 0, 1));
+    ballObject(glm::vec2 pos, float radius,
+        glm::vec2 velocity = glm::vec2(0.0f, 0.0f),
+        float mass = 50.0f,
+        glm::vec4 color = glm::vec4(1, 0, 0, 1));
     ~ballObject();
 
     ballObject(const ballObject&) = delete;

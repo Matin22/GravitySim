@@ -3,8 +3,8 @@
 #include "ball_object.hpp"
 #include "conf.hpp"
 
-ballObject::ballObject(glm::vec2 pos, float radius, glm::vec2 velocity, glm::vec4 color)
-    : position(pos), radius(radius), velocity(velocity), color(color), mass(1.0f), acceleration(0.0f, 0.0f)
+ballObject::ballObject(glm::vec2 pos, float radius, glm::vec2 velocity, float mass, glm::vec4 color)
+    : position(pos), radius(radius), velocity(velocity), color(color), mass(mass), acceleration(0.0f, 0.0f)
 {
     createVertices();
     
