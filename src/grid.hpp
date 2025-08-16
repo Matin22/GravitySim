@@ -9,9 +9,9 @@
 class Grid
 {
 public:
-    Grid(int width, int height, float cellSize);
+    Grid(float cellSize);
     ~Grid();
-    void updateGrid();
+    void updateGrid(const std::vector<ballObject*>& balls, float warpStrength);
     void draw(Shader &shaderProgram) const;
 
 private:
@@ -20,7 +20,7 @@ private:
     unsigned int VAO, VBO, EBO;
     int gridWidth, gridHeight;
     float cellSize;
-    std::vector<glm::vec2> originalPosition;
+    std::vector<glm::vec2> originalPositions;
 
     void createGrid();
     void updateVertexBuffer();
