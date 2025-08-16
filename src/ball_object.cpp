@@ -45,7 +45,7 @@ void ballObject::update(float dt)
     trailVertices.push_back(position.y);
     trailVertices.push_back(0.0f);
 
-    if (trailVertices.size() > (maxTrailLength * 3) && maxTrailLength != 0)
+    if (trailVertices.size() > static_cast<size_t>(maxTrailLength * 3) && maxTrailLength != 0)
         trailVertices.erase(trailVertices.begin(), trailVertices.begin() + 3);
 
     velocity += acceleration * dt;
@@ -104,6 +104,7 @@ void ballObject::drawTrail(Shader shaderprogram) const
     trailColor.a = 0.5f;
     shaderprogram.setVec4("color", trailColor);
 
+    glLineWidth(10.0f);
     glDrawArrays(GL_LINE_STRIP, 0, trailVertices.size() / 3);
     glBindVertexArray(0);
 }
