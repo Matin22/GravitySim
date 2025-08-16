@@ -15,6 +15,9 @@
 class ballObject
 {
 public:
+    glm::vec2 getPosition() const { return position; }
+    float getMass() const { return mass; }
+
     ballObject(glm::vec2 pos, float radius,
         glm::vec2 velocity = glm::vec2(0.0f, 0.0f),
         float mass = 50.0f,
@@ -29,10 +32,10 @@ public:
     void applyGravity(const ballObject *other);
 
     glm::vec2 position;
-    glm::vec2 velocity;
     float radius;
-    float mass;
+    glm::vec2 velocity;
     glm::vec4 color;
+    float mass;
     glm::vec2 acceleration;
 
     std::vector<float> trailVertices;
