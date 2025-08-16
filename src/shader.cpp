@@ -38,7 +38,7 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     }
     
     // check for reading errora
-    catch(std::ifstream::failure e)
+    catch(std::ifstream::failure& e)
     {
         std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
     }
@@ -46,10 +46,7 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     // turn to const char*
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
-    
-    int success{};
-    char infoLog[512];
-    
+        
     // init and compile vertex shader
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vShaderCode, NULL);
@@ -79,6 +76,7 @@ void Shader::checkCompileErrors(GLuint shader, std::string type)
 {
     GLint success;
     GLchar infoLog[1024];
+
     if (type != "PROGRAM")
     {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
