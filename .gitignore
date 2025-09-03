@@ -1,2 +1,18 @@
-/bin/*exe
-/.vscode
+# CMake build files
+/build/
+/out/
+
+# IDE-specific files
+/.vs/
+/.vscode/
+/.idea/
+*.VC.db
+*.suo
+*.user
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb

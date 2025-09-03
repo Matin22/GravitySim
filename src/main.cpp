@@ -117,15 +117,15 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // import and create shader
-    Shader myShader("res\\shaders\\vshader.glsl", "res\\shaders\\fshader.glsl");
+    Shader myShader("res\\shaders\\shader.vert", "res\\shaders\\shader.frag");
     Grid gravityGrid(50.0f);
 
     myShader.use();
     
     balls =
     {
-        // new ballObject(conf::OBJECT1_POSITION, conf::OBJECT1_RADIUS, conf::OBJECT1_VELOCITY, 100.0f, conf::OBJECT1_COLOR),
-        // new ballObject(conf::OBJECT2_POSITION, conf::OBJECT2_RADIUS, conf::OBJECT2_VELOCITY, 100.0f, conf::OBJECT2_COLOR)
+        new ballObject(conf::OBJECT1_POSITION, conf::OBJECT1_RADIUS, conf::OBJECT1_VELOCITY, 100.0f, conf::OBJECT1_COLOR),
+        new ballObject(conf::OBJECT2_POSITION, conf::OBJECT2_RADIUS, conf::OBJECT2_VELOCITY, 100.0f, conf::OBJECT2_COLOR)
         // new ballObject(glm::vec2(500.0f, 600.0f), 15.0f, glm::vec2(20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR),
         // new ballObject(glm::vec2(500.0f, 400.0f), 15.0f, glm::vec2(-20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR)
     };
@@ -135,19 +135,19 @@ int main()
         // user input handling
         processInput(window);
 
-        for (size_t i = 0; i < balls.size(); ++i)
-        {
-            for (size_t j = i + 1; j < balls.size(); ++j)
-            {
-                balls[i]->applyGravity(balls[j]);
-                balls[j]->applyGravity(balls[i]);
-            }
-        }
-
-        // for (size_t i = 1; i < balls.size(); i++)
+        // for (size_t i = 0; i < balls.size(); ++i)
         // {
-        //     balls[i]->applyGravity(balls[0]);
+        //     for (size_t j = i + 1; j < balls.size(); ++j)
+        //     {
+        //         balls[i]->applyGravity(balls[j]);
+        //         balls[j]->applyGravity(balls[i]);
+        //     }
         // }
+
+        for (size_t i = 1; i < balls.size(); i++)
+        {
+            balls[i]->applyGravity(balls[0]);
+        }
 
         for (auto ball : balls)
         {

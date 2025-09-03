@@ -5,10 +5,10 @@ namespace conf
     // window configs
     constexpr int SCREEN_WIDTH = 1000;
     constexpr int SCREEN_HEIGHT = 1000;
-    constexpr int MAX_FRAMERATE = 144;
+    constexpr int MAX_FRAMERATE = 144; // fps
     constexpr float dt = 1.0f / static_cast<float>(MAX_FRAMERATE);
 
-    constexpr int MAX_TRAIL_LENGTH = 0;
+    constexpr int MAX_TRAIL_LENGTH = 10 * MAX_FRAMERATE; // in seconds
 
     // constexpr float G_CONSTANT = 6.67430e-11;
     constexpr float G_CONSTANT = 1000.0f;
