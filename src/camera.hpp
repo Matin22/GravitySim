@@ -13,8 +13,8 @@ enum Camera_Movement {
 };
 
 const float YAW     = -90.0f;
-const float PITCH   = 0.0f;
-const float SPEED   = 2.5f;
+const float PITCH   = -45.0f;
+const float SPEED   = 100.0f;
 const float SENS    = 0.1f;
 const float ZOOM    = 45.0f;
 
@@ -38,7 +38,7 @@ public:
     float mouseSens;
     float zoom;
 
-    Camera(glm::vec3 inPosition = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 inUp = glm::vec3(0.0f, 1.0f, 0.0f), float inYaw = YAW, float inPitch = PITCH);
+    Camera(glm::vec3 inPosition = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 inUp = glm::vec3(0.0f, 0.0f, 1.0f), float inYaw = YAW, float inPitch = PITCH);
 
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float inYaw, float inPitch);
 

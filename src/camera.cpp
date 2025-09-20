@@ -62,10 +62,14 @@ void Camera::ProcessMouseScroll(float offsetY)
 
 void Camera::updateCameraVectors()
 {
+    const float yawRad   = glm::radians(yaw);
+    const float pitchRad = glm::radians(pitch);
+
     glm::vec3 direction;
-    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    direction.x = cos(yawRad) * cos(pitchRad);
+    direction.y = -sin(yawRad) * cos(pitchRad);
+    direction.z = sin(pitchRad);
+
     front = glm::normalize(direction);
 
     right   = glm::normalize(glm::cross(front, worldUp));
