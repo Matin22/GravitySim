@@ -18,9 +18,9 @@ private:
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
     unsigned int VAO, VBO, EBO;
-    int gridWidth, gridHeight;
+    int gridWidth, gridHeight, gridDepth;
     float cellSize;
-    std::vector<glm::vec2> originalPositions;
+    std::vector<glm::vec3> originalPositions;
 
     void createGrid();
     void updateVertexBuffer();

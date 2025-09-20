@@ -5,7 +5,7 @@
 #include "conf.hpp"
 
 Grid::Grid(float cellSize)
-    :gridWidth(conf::SCREEN_WIDTH / cellSize), gridHeight(conf::SCREEN_HEIGHT / cellSize), cellSize(cellSize)
+    :gridWidth(conf::SCREEN_X / cellSize), gridHeight(conf::SCREEN_Y / cellSize), gridDepth(conf::SCREEN_X / cellSize),cellSize(cellSize)
 {
     createGrid();
     glGenVertexArrays(1, &VAO);
@@ -35,49 +35,59 @@ Grid::~Grid()
 
 void Grid::updateGrid(const std::vector<ballObject*>& balls, float warpStrength)
 {
-    auto get_index = [&](int x, int y) {
-        return static_cast<size_t>(y * (gridWidth + 1) + x);
+    auto get_index = [&](int x, int y, int z) {
+        return static_cast<size_t>(
+            z * (gridWidth + 1) * (gridHeight + 1) +
+            y * (gridWidth + 1) +
+            x
+        );
     };
 
-    std::vector<glm::vec2> displacedPositions = originalPositions;
+    std::vector<glm::vec3> displacedPositions = originalPositions;
 
     for (size_t i = 0; i < originalPositions.size(); i++)
     {
-        glm::vec2 currentPos = originalPositions[i];
-        glm::vec2 totalDisplacement(0.0f, 0.0f);
+        glm::vec3 currentPos = originalPositions[i];
+        glm::vec3 totalDisplacement(0.0f);
 
         for (const auto& ball : balls)
         {
-            glm::vec2 direction = ball->getPosition() - currentPos;
+            glm::vec3 direction = ball->getPosition() - currentPos;
             float distance = glm::length(direction);
 
-            float softening = 2.0f * ball->getMass();
+            float softening = 2.0f * ball->getRadius();
             if (distance > 0.001f)
             {
                 float influence = (ball->getMass() * warpStrength) / (distance + softening);
                 totalDisplacement += glm::normalize(direction) * influence;
             }
         }
+
         displacedPositions[i] += totalDisplacement;
     }
 
     int smoothingPasses = 5;
-    std::vector<glm::vec2> smoothedPositions = displacedPositions;
+    std::vector<glm::vec3> smoothedPositions = displacedPositions;
     for (int pass = 0; pass < smoothingPasses; pass++)
     {
-        for (int y = 1; y < gridHeight; y++)
+        for (int z = 1; z < gridDepth; z++)
         {
-            for (int x = 1; x < gridWidth; x++)
+            for (int y = 1; y < gridHeight; y++)
             {
-                glm::vec2 up = displacedPositions[get_index(x, y + 1)];
-                glm::vec2 down = displacedPositions[get_index(x, y - 1)];
-                glm::vec2 left = displacedPositions[get_index(x - 1, y)];
-                glm::vec2 right = displacedPositions[get_index(x + 1, y)];
+                for (int x = 1; x < gridWidth; x++)
+                {
+                    glm::vec3 pX1 = displacedPositions[get_index(x+1, y, z)];
+                    glm::vec3 pX0 = displacedPositions[get_index(x-1, y, z)];
+                    glm::vec3 pY1 = displacedPositions[get_index(x, y+1, z)];
+                    glm::vec3 pY0 = displacedPositions[get_index(x, y-1, z)];
+                    glm::vec3 pZ1 = displacedPositions[get_index(x, y, z+1)];
+                    glm::vec3 pZ0 = displacedPositions[get_index(x, y, z-1)];
 
-                glm::vec2 averagePosition = (up + down + left + right) * 0.25f;
+                    glm::vec3 averagePosition = (pX1 + pX0 + pY1 + pY0 + pZ1 + pZ0) / 6.0f;
 
-                size_t currentIndex = get_index(x, y);
-                smoothedPositions[currentIndex] = glm::mix(displacedPositions[currentIndex], averagePosition, 0.5f);
+                    size_t currentIndex = get_index(x, y, z);
+                    smoothedPositions[currentIndex] = glm::mix(displacedPositions[currentIndex], averagePosition, 0.5f);
+                }
             }
         }
         displacedPositions = smoothedPositions;
@@ -85,8 +95,9 @@ void Grid::updateGrid(const std::vector<ballObject*>& balls, float warpStrength)
 
     for (size_t i = 0; i < displacedPositions.size(); i++)
     {
-        vertices[i * 3] = displacedPositions[i].x;
+        vertices[i * 3 + 0] = displacedPositions[i].x;
         vertices[i * 3 + 1] = displacedPositions[i].y;
+        vertices[i * 3 + 2] = displacedPositions[i].z;
     }
 
     updateVertexBuffer();
@@ -113,40 +124,71 @@ void Grid::createGrid()
     originalPositions.clear();
 
     // create vertices
+    for (int z = 0; z <= gridDepth; z++)
+    {
+        for (int y = 0; y <= gridHeight; y++)
+        {
+            for (int x = 0; x <= gridWidth; x++)
+            {
+                float xPos = x * cellSize;
+                float yPos = y * cellSize;
+                float zPos = z * cellSize;
+
+                vertices.push_back(xPos);
+                vertices.push_back(yPos);
+                vertices.push_back(zPos);
+
+                originalPositions.push_back(glm::vec3(xPos, yPos, zPos));
+            }
+        }
+    }
+
+    auto idx = [&](int x, int y, int z){
+        return static_cast<unsigned int>(
+            z * (gridWidth + 1) * (gridHeight + 1) + 
+            y * (gridWidth + 1) + 
+            x
+        );
+    };
+
+    // X axis lines
+    for (int z = 0; z <= gridDepth; z++)
+    {
+        for (int y = 0; y <= gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                indices.push_back(idx(x, y, z));
+                indices.push_back(idx(x + 1, y, z));
+            }
+        }
+    }
+
+    // Y axis lines
+    for (int z = 0; z <= gridDepth; z++)
+    {
+        for (int x = 0; x <= gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                indices.push_back(idx(x, y, z));
+                indices.push_back(idx(x, y + 1, z));
+            }
+        }
+    }
+
     for (int y = 0; y <= gridHeight; y++)
     {
         for (int x = 0; x <= gridWidth; x++)
         {
-            float xPos = x * cellSize;
-            float yPos = y * cellSize;
-
-            vertices.push_back(xPos);
-            vertices.push_back(yPos);
-            vertices.push_back(0.0f);
-
-            originalPositions.push_back(glm::vec2(xPos, yPos));
+            for (int z = 0; z < gridDepth; z++)
+            {
+                indices.push_back(idx(x, y, z));
+                indices.push_back(idx(x, y, z + 1));
+            }
         }
     }
 
-    // horizontal indices lines
-    for (int y = 0; y <= gridHeight; y++)
-    {
-        for (int x = 0; x < gridWidth; x++)
-        {
-            indices.push_back(y * (gridWidth + 1) + x);
-            indices.push_back(y * (gridWidth + 1) + x + 1);
-        }
-    }
-
-    // vertical indices lines
-    for (int x = 0; x <= gridWidth; x++)
-    {
-        for (int y = 0; y < gridHeight; y++)
-        {
-            indices.push_back(y * (gridWidth + 1) + x);
-            indices.push_back((y + 1) * (gridWidth + 1) + x);
-        }
-    }
 }
 
 void Grid::updateVertexBuffer()

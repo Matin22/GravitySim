@@ -20,6 +20,17 @@
 
 std::vector<ballObject *> balls;
 
+// framerate
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+Camera camera(glm::vec3(conf::SCREEN_X / 2.0f, 0.0f, conf::SCREEN_Z));
+
+bool firstMouse = true;
+float lastX = conf::SCREEN_X / 2.0f;
+float lastY = conf::SCREEN_Y / 2.0f;
+
 std::string parseShader(const std::string &filePath)
 {
     std::ifstream file(filePath);
@@ -45,10 +56,21 @@ void scroll_callback(GLFWwindow *window, double offsetX, double offSetY)
 
 void mouse_callback(GLFWwindow* window, double xPos, double yPos)
 {
-    (void)window;
-    (void)xPos;
-    (void)yPos;
+    if (firstMouse)
+    {
+        lastX = xPos;
+        lastY = yPos;
+        firstMouse = false;
+    }
+
+    float xOffset = xPos - lastX;
+    float yOffset = lastY - yPos; // coordinates reversed
+    lastX = xPos;
+    lastY = yPos;
+
+    camera.ProcessMouseMovement(xOffset, yOffset);
 }
+
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mode)
 {
@@ -59,13 +81,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mode)
         glfwGetCursorPos(window, &xpos, &ypos);
         
         float x = static_cast<float>(xpos);
-        float y = static_cast<float>(conf::SCREEN_HEIGHT - ypos);
+        float y = static_cast<float>(conf::SCREEN_Y - ypos);
+        float z = 0.0f;
         
         // Create new ball at mouse position
         ballObject* newBall = new ballObject(
-            glm::vec2(x, y), 
+            glm::vec3(x, y, z), 
             10.0f,                              // radius
-            glm::vec2(0.0f, 0.0f),              // velocity
+            glm::vec3(0.0f, 0.0f, 0.0f),        // velocity
             25.0f,                              // mass
             glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)   // blue color
         );
@@ -80,8 +103,12 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-}
 
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(RIGHT, deltaTime);
+}
 
 int main()
 {
@@ -90,7 +117,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(conf::SCREEN_WIDTH, conf::SCREEN_HEIGHT, "GravitySim", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(conf::SCREEN_X, conf::SCREEN_Y, "GravitySim", NULL, NULL);
 
     if (window == NULL)
     {
@@ -102,10 +129,11 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     
-    // glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
     // glfwSetScrollCallback(window, scroll_callback);
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+    // glfwSetMouseButtonCallback(window, mouse_button_callback);
+
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -115,10 +143,11 @@ int main()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_DEPTH_TEST);
 
     // import and create shader
     Shader myShader("res\\shaders\\shader.vert", "res\\shaders\\shader.frag");
-    Grid gravityGrid(50.0f);
+    Grid gravityGrid(100.0f);
 
     myShader.use();
     
@@ -132,6 +161,10 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         // user input handling
         processInput(window);
 
@@ -158,11 +191,18 @@ int main()
 
         // rendering
         glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        
+        // glm::vec3 camPos(conf::SCREEN_X * 0.5f, conf::SCREEN_Y * 0.5f, 1200.0f);
+        // glm::vec3 target(conf::SCREEN_X * 0.5f, conf::SCREEN_Y * 0.5f, 0.0f);
+        // glm::mat4 view = glm::lookAt(camPos, target, glm::vec3(0, 1, 0));
+        glm::mat4 view = camera.GetViewMatrix();
 
         // set projection matrix for every object
-        glm::mat4 projection = glm::mat4(1.0f);
-        projection = glm::ortho(0.0f, static_cast<float>(conf::SCREEN_WIDTH), 0.0f, static_cast<float>(conf::SCREEN_HEIGHT));
+        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), static_cast<float>(conf::SCREEN_X) / static_cast<float>(conf::SCREEN_Y), 0.1f, 2000.0f);
+        
+        myShader.setMat4("view", view);
         myShader.setMat4("projection", projection);
 
         gravityGrid.draw(myShader);
