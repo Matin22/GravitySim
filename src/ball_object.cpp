@@ -3,17 +3,21 @@
 #include "ball_object.hpp"
 #include "conf.hpp"
 
-ballObject::ballObject(glm::vec2 pos, float radius, glm::vec2 velocity, float mass, glm::vec4 color)
-    : position(pos), radius(radius), velocity(velocity), color(color), mass(mass), acceleration(0.0f, 0.0f)
+ballObject::ballObject(glm::vec3 pos, float radius, glm::vec3 velocity, float mass, glm::vec4 color)
+    : position(pos), radius(radius), velocity(velocity), color(color), mass(mass), acceleration(0.0f, 0.0f, 0.0f)
 {
     createVertices();
     
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
     glGenVertexArrays(1, &VAO);
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
     // stride and offset for position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
@@ -43,14 +47,14 @@ void ballObject::update(float dt)
 {
     trailVertices.push_back(position.x);
     trailVertices.push_back(position.y);
-    trailVertices.push_back(0.0f);
+    trailVertices.push_back(position.z);
 
     if (trailVertices.size() > static_cast<size_t>(maxTrailLength * 3) && maxTrailLength != 0)
         trailVertices.erase(trailVertices.begin(), trailVertices.begin() + 3);
 
     velocity += acceleration * dt;
     position += velocity * dt;
-    acceleration = glm::vec2(0.0f, 0.0f);
+    acceleration = glm::vec3(0.0f);
 }
 
 void ballObject::draw(Shader shaderProgram) const
@@ -58,32 +62,32 @@ void ballObject::draw(Shader shaderProgram) const
     shaderProgram.use();
 
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(position, 0.0f));
-    model = glm::scale(model, glm::vec3(radius, radius, 1.0f));
+    model = glm::translate(model, position);
+    model = glm::scale(model, glm::vec3(radius));
  
     shaderProgram.setMat4("model", model);
     shaderProgram.setVec4("color", color);
 
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size() / 3);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 
-void ballObject::applyForce(glm::vec2 &force)
+void ballObject::applyForce(glm::vec3 &force)
 {
     acceleration += force / mass;
 }
 
 void ballObject::applyGravity(const ballObject *other)
 {
-    glm::vec2 direction = other->position - this->position;
+    glm::vec3 direction = other->position - this->position;
     float distance = glm::length(direction);
 
     if (distance > 0)
     {
         direction = glm::normalize(direction);
         float force = (conf::G_CONSTANT * other->mass * this->mass) / (distance * distance);
-        glm::vec2 forceVector = direction * force;
+        glm::vec3 forceVector = direction * force;
         applyForce(forceVector);
     }
 }
@@ -109,20 +113,40 @@ void ballObject::drawTrail(Shader shaderprogram) const
     glBindVertexArray(0);
 }
 
-void ballObject::createVertices(int segments)
+void ballObject::createVertices(int stacks, int slices)
 {
     vertices.clear();
-
-    vertices.push_back(0.0f);
-    vertices.push_back(0.0f);
-    vertices.push_back(0.0f);
-
-    for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * 3.14159265359f * i / segments;
-        float x = cos(angle);
-        float y = sin(angle);
-        vertices.push_back(x);
-        vertices.push_back(y);
-        vertices.push_back(0.0f);
+    indices.clear();
+    
+    // Generate UV sphere vertices
+    for (int i = 0; i <= stacks; ++i) {
+        float phi = glm::pi<float>() * i / stacks;  // Latitude
+        for (int j = 0; j <= slices; ++j) {
+            float theta = 2.0f * glm::pi<float>() * j / slices;  // Longitude
+            
+            float x = sin(phi) * cos(theta);
+            float y = cos(phi);
+            float z = sin(phi) * sin(theta);
+            
+            vertices.push_back(x);  // Unit sphere, scaled by radius in draw
+            vertices.push_back(y);
+            vertices.push_back(z);
+        }
+    }
+    
+    // Generate indices for triangles
+    for (int i = 0; i < stacks; ++i) {
+        for (int j = 0; j < slices; ++j) {
+            int first = i * (slices + 1) + j;
+            int second = first + slices + 1;
+            
+            indices.push_back(first);
+            indices.push_back(second);
+            indices.push_back(first + 1);
+            
+            indices.push_back(second);
+            indices.push_back(second + 1);
+            indices.push_back(first + 1);
+        }
     }
 }
