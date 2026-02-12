@@ -117,7 +117,7 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // import and create shader
-    Shader myShader("res\\shaders\\vshader.glsl", "res\\shaders\\fshader.glsl");
+    Shader myShader("res/shaders/vShader.glsl", "res/shaders/fShader.glsl");
     Grid gravityGrid(50.0f);
 
     myShader.use();
@@ -126,8 +126,8 @@ int main()
     {
         // new ballObject(conf::OBJECT1_POSITION, conf::OBJECT1_RADIUS, conf::OBJECT1_VELOCITY, 100.0f, conf::OBJECT1_COLOR),
         // new ballObject(conf::OBJECT2_POSITION, conf::OBJECT2_RADIUS, conf::OBJECT2_VELOCITY, 100.0f, conf::OBJECT2_COLOR)
-        // new ballObject(glm::vec2(500.0f, 600.0f), 15.0f, glm::vec2(20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR),
-        // new ballObject(glm::vec2(500.0f, 400.0f), 15.0f, glm::vec2(-20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR)
+        new ballObject(glm::vec2(500.0f, 600.0f), 15.0f, glm::vec2(20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR),
+        new ballObject(glm::vec2(500.0f, 400.0f), 15.0f, glm::vec2(-20.0f, 0.0f), 100.0f, conf::OBJECT1_COLOR)
     };
 
     while (!glfwWindowShouldClose(window))
@@ -184,7 +184,8 @@ int main()
 
     for (auto ball : balls)
     {
-        delete ball;
+        return 0;
+        // delete ball;
     }
 
     glfwTerminate();

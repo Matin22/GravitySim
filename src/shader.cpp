@@ -13,35 +13,34 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     std::ifstream vShaderFile;
     std::ifstream fShaderFile;  
     
-    // check for errors
-    vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-    fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+    // open shader files
+    std::cout << "Opening vertex shader: " << vertexPath << std::endl;
+    vShaderFile.open(vertexPath);
+    std::cout << "Opening fragment shader: " << fragmentPath << std::endl;
+    fShaderFile.open(fragmentPath);
 
-    try
-    {   
-        // open shader files
-        vShaderFile.open(vertexPath);
-        fShaderFile.open(fragmentPath);
-        
-        std::stringstream vShaderStream, fShaderStream;
-
-        // read through a stream
-        vShaderStream << vShaderFile.rdbuf();
-        fShaderStream << fShaderFile.rdbuf();
-
-        vShaderFile.close();
-        fShaderFile.close();
-        
-        // push the code to a string
-        vertexCode   = vShaderStream.str();
-        fragmentCode = fShaderStream.str();
-    }
-    
-    // check for reading errora
-    catch(std::ifstream::failure& e)
+    if (!vShaderFile.is_open() || !fShaderFile.is_open())
     {
-        std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+        std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ: "
+                  << "vertex=" << (vShaderFile.is_open() ? "ok" : "missing")
+                  << ", fragment=" << (fShaderFile.is_open() ? "ok" : "missing")
+                  << std::endl;
+        ID = 0;
+        return;
     }
+
+    std::stringstream vShaderStream, fShaderStream;
+
+    // read through a stream
+    vShaderStream << vShaderFile.rdbuf();
+    fShaderStream << fShaderFile.rdbuf();
+
+    vShaderFile.close();
+    fShaderFile.close();
+    
+    // push the code to a string
+    vertexCode   = vShaderStream.str();
+    fragmentCode = fShaderStream.str();
     
     // turn to const char*
     const char* vShaderCode = vertexCode.c_str();

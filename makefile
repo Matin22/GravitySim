@@ -19,7 +19,7 @@ all: $(TARGET)
 
 # Build target
 $(TARGET): $(SRC)
-	@mkdir -p $(BIN_DIR)
+# 	@if not exist $(BIN_DIR) mkdir $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET) $(LIBS)
 
 # Clean target
