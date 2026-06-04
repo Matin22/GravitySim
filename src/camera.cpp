@@ -29,10 +29,12 @@ glm::mat4 Camera::GetViewMatrix()
 void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 {
     float velocity = movementSpeed * deltaTime;
-    if (direction == FORWARD)   position += front * velocity;
-    if (direction == BACKWARD)  position -= front * velocity;
+    if (direction == FRONT)     position += horizontalFront * velocity;
+    if (direction == BACK)      position -= horizontalFront * velocity;
     if (direction == LEFT)      position -= right * velocity;
     if (direction == RIGHT)     position += right * velocity;
+    if (direction == UP)        position += worldUp * velocity;
+    if (direction == DOWN)      position -= worldUp * velocity;
 }
 
 void Camera::ProcessMouseMovement(float offsetX, float offsetY, GLboolean constrainPitch)
@@ -57,7 +59,7 @@ void Camera::ProcessMouseScroll(float offsetY)
 {
     zoom -= static_cast<float>(offsetY);
     if (zoom < 1.0f) zoom = 1.0;
-    if (zoom > 45.0f) zoom = 45.0;
+    if (zoom > 90.0f) zoom = 90.0;
 }
 
 void Camera::updateCameraVectors()
@@ -71,7 +73,9 @@ void Camera::updateCameraVectors()
     direction.z = sin(pitchRad);
 
     front = glm::normalize(direction);
-
+    
     right   = glm::normalize(glm::cross(front, worldUp));
     up      = glm::normalize(glm::cross(right, front));
+    
+    horizontalFront = glm::normalize(glm::cross(worldUp, right));
 }

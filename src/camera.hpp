@@ -5,17 +5,21 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "conf.hpp"
+
 enum Camera_Movement {
-    FORWARD,
-    BACKWARD,
+    FRONT,
+    BACK,
     LEFT,
-    RIGHT
+    RIGHT,
+    UP,
+    DOWN
 };
 
 const float YAW     = -90.0f;
 const float PITCH   = -45.0f;
-const float SPEED   = 100.0f;
-const float SENS    = 0.1f;
+const float SPEED   = conf::CAMERA_SPEED;
+const float SENS    = conf::CAMERA_SENS;
 const float ZOOM    = 45.0f;
 
 class Camera
@@ -28,6 +32,7 @@ public:
     glm::vec3 up;
     glm::vec3 right;
     glm::vec3 worldUp;
+    glm::vec3 horizontalFront;
 
     // euler angle
     float yaw;
@@ -43,6 +48,8 @@ public:
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float inYaw, float inPitch);
 
     glm::mat4 GetViewMatrix();
+    glm::vec3 getPosition() { return position; }
+    glm::vec3 getDirection() { return front; }
 
     void ProcessKeyboard(Camera_Movement direction, float deltaTime);
     void ProcessMouseMovement(float offsetX, float offsetY, GLboolean constrainPitch = true);

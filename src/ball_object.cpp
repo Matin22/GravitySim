@@ -134,7 +134,7 @@ void ballObject::createVertices(int stacks, int slices)
         }
     }
     
-    // Generate indices for triangles
+    // Generate indices for triangles in the sphere
     for (int i = 0; i < stacks; ++i) {
         for (int j = 0; j < slices; ++j) {
             int first = i * (slices + 1) + j;

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 
-#include "grid.hpp"
+#include "grid3D.hpp"
 #include "conf.hpp"
 
 Grid::Grid(float cellSize)
@@ -70,23 +70,28 @@ void Grid::updateGrid(const std::vector<ballObject*>& balls, float warpStrength)
     std::vector<glm::vec3> smoothedPositions = displacedPositions;
     for (int pass = 0; pass < smoothingPasses; pass++)
     {
-        for (int z = 1; z < gridDepth; z++)
+        for (int z = 0; z <= gridDepth; z++)
         {
-            for (int y = 1; y < gridHeight; y++)
+            for (int y = 0; y <= gridHeight; y++)
             {
-                for (int x = 1; x < gridWidth; x++)
+                for (int x = 0; x <= gridWidth; x++)
                 {
-                    glm::vec3 pX1 = displacedPositions[get_index(x+1, y, z)];
-                    glm::vec3 pX0 = displacedPositions[get_index(x-1, y, z)];
-                    glm::vec3 pY1 = displacedPositions[get_index(x, y+1, z)];
-                    glm::vec3 pY0 = displacedPositions[get_index(x, y-1, z)];
-                    glm::vec3 pZ1 = displacedPositions[get_index(x, y, z+1)];
-                    glm::vec3 pZ0 = displacedPositions[get_index(x, y, z-1)];
+                    int neighborCount = 0;
+                    glm::vec3 sum(0.0f);
 
-                    glm::vec3 averagePosition = (pX1 + pX0 + pY1 + pY0 + pZ1 + pZ0) / 6.0f;
+                    if (x > 0) { sum += smoothedPositions[get_index(x-1, y, z)]; neighborCount++; }
+                    if (x < gridWidth) { sum += smoothedPositions[get_index(x+1, y, z)]; neighborCount++; }
+                    if (y > 0) { sum += smoothedPositions[get_index(x, y-1, z)]; neighborCount++; }
+                    if (y < gridHeight) { sum += smoothedPositions[get_index(x, y+1, z)]; neighborCount++; }
+                    if (z > 0) { sum += smoothedPositions[get_index(x, y, z-1)]; neighborCount++; }
+                    if (z < gridDepth) { sum += smoothedPositions[get_index(x, y, z+1)]; neighborCount++; }
 
-                    size_t currentIndex = get_index(x, y, z);
-                    smoothedPositions[currentIndex] = glm::mix(displacedPositions[currentIndex], averagePosition, 0.5f);
+                    if (neighborCount > 0)
+                    {
+                        glm::vec3 averagePosition = sum / static_cast<float>(neighborCount);
+                        size_t currentIndex = get_index(x, y, z);
+                        smoothedPositions[currentIndex] = glm::mix(displacedPositions[currentIndex], averagePosition, 0.5f);
+                    }
                 }
             }
         }
@@ -99,7 +104,6 @@ void Grid::updateGrid(const std::vector<ballObject*>& balls, float warpStrength)
         vertices[i * 3 + 1] = displacedPositions[i].y;
         vertices[i * 3 + 2] = displacedPositions[i].z;
     }
-
     updateVertexBuffer();
 }
 
@@ -177,6 +181,7 @@ void Grid::createGrid()
         }
     }
 
+    // Z axis lines
     for (int y = 0; y <= gridHeight; y++)
     {
         for (int x = 0; x <= gridWidth; x++)
